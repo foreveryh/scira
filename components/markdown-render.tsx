@@ -188,10 +188,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
         },
         list(children, ordered) {
             const ListTag = ordered ? 'ol' : 'ul';
-            return <ListTag className="list-inside list-disc my-4 pl-4 text-neutral-800 dark:text-neutral-200">{children}</ListTag>;
+            return <ListTag key={`list-${Math.random()}`} className="list-inside list-disc my-4 pl-4 text-neutral-800 dark:text-neutral-200">{children}</ListTag>;
         },
         listItem(children) {
-            return <li className="my-2 text-neutral-800 dark:text-neutral-200">{children}</li>;
+            return <li key={`item-${Math.random()}`} className="my-2 text-neutral-800 dark:text-neutral-200">{children}</li>;
         },
         blockquote(children) {
             return <blockquote className="border-l-4 border-neutral-300 dark:border-neutral-600 pl-4 italic my-4 text-neutral-700 dark:text-neutral-300">{children}</blockquote>;

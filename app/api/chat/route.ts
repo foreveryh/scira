@@ -5,6 +5,7 @@ import { xai } from '@ai-sdk/xai';
 import { cerebras } from '@ai-sdk/cerebras';
 import { anthropic } from '@ai-sdk/anthropic'
 import { groq } from '@ai-sdk/groq'
+import { ppinfra } from '@/lib/ppinfra'
 import CodeInterpreter from '@e2b/code-interpreter';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { tavily } from '@tavily/core';
@@ -26,6 +27,11 @@ const scira = customProvider({
     languageModels: {
         'scira-default': xai('grok-2-1212'),
         'scira-grok-vision': xai('grok-2-vision-1212'),
+        'scira-deepseek-r1':wrapLanguageModel({
+            model: ppinfra('deepseek/deepseek-r1/community'),
+            middleware: extractReasoningMiddleware({ tagName: 'think' })
+        }), 
+        'scira-deepseek-v3': ppinfra('deepseek/deepseek-v3/community'),
         'scira-llama': cerebras('llama-3.3-70b'),
         'scira-sonnet': anthropic('claude-3-5-sonnet-20241022'),
         'scira-r1': wrapLanguageModel({
@@ -1340,7 +1346,7 @@ export async function POST(req: Request) {
                             // Now generate the research plan
                             const { object: researchPlan } = await generateObject({
                                 model: scira.languageModel("scira-default"),
-                                temperature: 0.5,
+                                temperature: 0.6,
                                 schema: z.object({
                                     search_queries: z.array(z.object({
                                         query: z.string(),
@@ -1518,7 +1524,7 @@ export async function POST(req: Request) {
 
                                 const { object: analysisResult } = await generateObject({
                                     model: scira.languageModel("scira-default"),
-                                    temperature: 0.5,
+                                    temperature: 0.6,
                                     schema: z.object({
                                         findings: z.array(z.object({
                                             insight: z.string(),

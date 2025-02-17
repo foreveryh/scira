@@ -21,11 +21,12 @@
 *.pem
 
 # debug
-npm-debug.log*
+pm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
 # vercel
