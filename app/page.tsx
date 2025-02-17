@@ -140,7 +140,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import ReasonSearch from '@/components/reason-search';
 import type { StreamUpdate } from '@/components/reason-search';
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 interface Attachment {
     name: string;
