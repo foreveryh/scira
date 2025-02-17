@@ -33,16 +33,11 @@ async function fetchGoogleTrends(): Promise<TrendingQuery[]> {
             const items = xmlText.match(/<title>(?!Daily Search Trends)(.*?)<\/title>/g) || [];
 
             const categories = [
-                'trending',
-                'community',
                 'science',
                 'tech',
-                'travel',
-                'politics',
-                'health',
-                'sports',
-                'finance',
-                'football',
+                'AI',
+                'business',
+                'trending',
             ] as const;
 
             const schema = z.object({

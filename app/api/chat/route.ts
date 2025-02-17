@@ -6,6 +6,7 @@ import { cerebras } from '@ai-sdk/cerebras';
 import { anthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google';
 import { groq } from '@ai-sdk/groq'
+import { ppinfra } from '@/lib/ppinfra'
 import CodeInterpreter from '@e2b/code-interpreter';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { tavily } from '@tavily/core';
@@ -27,6 +28,11 @@ const scira = customProvider({
     languageModels: {
         'scira-default': xai('grok-2-1212'),
         'scira-grok-vision': xai('grok-2-vision-1212'),
+        'scira-deepseek-r1':wrapLanguageModel({
+            model: ppinfra('deepseek/deepseek-r1/community'),
+            middleware: extractReasoningMiddleware({ tagName: 'think' })
+        }), 
+        'scira-deepseek-v3': ppinfra('deepseek/deepseek-v3/community'),
         'scira-llama': cerebras('llama-3.3-70b'),
         'scira-sonnet': anthropic('claude-3-5-sonnet-20241022'),
         'scira-r1': wrapLanguageModel({
