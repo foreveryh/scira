@@ -754,24 +754,6 @@ const HomeContent = () => {
         },
         onError: (error) => {
             console.error("Chat error:", error);
-            let errorMessage = "An error occurred while processing your request.";
-            
-            if (error.cause?.code === 'MODEL_SWITCH_ERROR') {
-                errorMessage = "Failed to switch to the selected model. Please try again or choose a different model.";
-            } else if (error.cause?.code === 'MODEL_UNAVAILABLE') {
-                errorMessage = "The selected model is currently unavailable. Please try another model.";
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            toast.error("An error occurred.", {
-                description: errorMessage,
-            });
-            
-            // 如果是模型切换错误，回退到默认模型
-            if (error.cause?.code === 'MODEL_SWITCH_ERROR' || error.cause?.code === 'MODEL_UNAVAILABLE') {
-                setSelectedModel('scira-default');
-            }
         },
     }), [selectedModel, selectedGroup]);
 
