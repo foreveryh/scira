@@ -173,9 +173,23 @@ export async function POST(req: Request) {
     const { tools: activeTools, systemPrompt } = await getGroupConfig(group);
 
     console.log("Running with model: ", model.trim());
+    console.log("Active tools: ", JSON.stringify(activeTools, null, 2));
+    console.log("System prompt: ", systemPrompt);
 
     return createDataStreamResponse({
         execute: async (dataStream) => {
+            console.log("Input messages structure:", JSON.stringify({
+                messagesLength: messages.length,
+                messageTypes: messages.map(m => typeof m),
+                messageKeys: messages.map(m => Object.keys(m))
+            }, null, 2));
+            console.log("Full messages content:", JSON.stringify(messages, null, 2));
+            console.log("Messages array details:", messages.map(msg => ({
+                role: msg.role,
+                content: msg.content,
+                id: msg.id,
+                parts: msg.parts
+            })));
             const result = streamText({
                 model: scira.languageModel(model),
                 maxSteps: 5,

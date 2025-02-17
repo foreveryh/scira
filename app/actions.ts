@@ -6,7 +6,6 @@ import { SearchGroupId } from '@/lib/utils';
 import { xai } from '@ai-sdk/xai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-
 export async function suggestQuestions(history: any[]) {
   'use server';
 
@@ -105,6 +104,7 @@ export async function fetchMetadata(url: string) {
 }
 
 const groupTools = {
+  llm:[] as const,
   web: [
     'web_search', 'get_weather_data',
     'retrieve',
@@ -122,6 +122,7 @@ const groupTools = {
 } as const;
 
 const groupPrompts = {
+  llm: `You are a helpful assistant that helps users find answers to their questions. `,
   web: `
   You are an AI web search engine called Scira, designed to help users find information on the internet with no unnecessary chatter and more focus on the content.
   'You MUST run the tool first exactly once' before composing your response. **This is non-negotiable.**
