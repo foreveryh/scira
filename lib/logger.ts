@@ -15,7 +15,9 @@ class Logger {
   private readonly isDebugEnabled: boolean;
 
   private constructor() {
-    this.isDebugEnabled = process.env.NODE_ENV === 'development' || serverEnv.DEBUG === 'true';
+    this.isDebugEnabled = typeof window === 'undefined' ? 
+      (process.env.NODE_ENV === 'development' || serverEnv.DEBUG === 'true') : 
+      process.env.NODE_ENV === 'development';
   }
 
   public static getInstance(): Logger {

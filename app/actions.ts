@@ -122,7 +122,7 @@ const groupTools = {
   extreme: ['reason_search'] as const,
 } as const;
 
-const groupPrompts = {
+const englishGroupPrompts = {
   llm: `You are a helpful assistant that helps users find answers to their questions. `,
   web: `
   You are an AI web search engine called Scira, designed to help users find information on the internet with no unnecessary chatter and more focus on the content.
@@ -321,6 +321,16 @@ const groupPrompts = {
   - In the response avoid referencing the citation directly, make it a citation in the statement.`,
 } as const;
 
+const groupPrompts = {
+  llm: `${englishGroupPrompts.llm}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  web: `${englishGroupPrompts.web}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  academic: `${englishGroupPrompts.academic}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  youtube: `${englishGroupPrompts.youtube}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  x: `${englishGroupPrompts.x}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  analysis: `${englishGroupPrompts.analysis}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  fun: `${englishGroupPrompts.fun}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+  extreme: `${englishGroupPrompts.extreme}\nYou MUST respond in Chinese unless explicitly specified otherwise.\n你必须用中文回答，除非用户明确要求使用其他语言。`,
+} as const;
 
 export async function getGroupConfig(groupId: SearchGroupId = 'web') {
   "use server";
