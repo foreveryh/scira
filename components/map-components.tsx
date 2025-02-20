@@ -4,6 +4,7 @@ import { clientEnv } from "@/env/client";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import React, { useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 
 mapboxgl.accessToken = clientEnv.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -33,7 +34,7 @@ const MapComponent = ({ center, places = [], zoom = 14, onMarkerClick }: MapProp
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
     if (!mapboxgl.accessToken) {
-      console.error('Mapbox access token is not set');
+      logger.error('Mapbox access token is not set');
       return;
     }
 

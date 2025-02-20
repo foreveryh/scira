@@ -2,6 +2,7 @@
 'use server';
 
 import { serverEnv } from '@/env/server';
+import { logger } from '@/lib/logger';
 import { SearchGroupId } from '@/lib/utils';
 import { xai } from '@ai-sdk/xai';
 import { generateObject } from 'ai';
@@ -9,7 +10,7 @@ import { z } from 'zod';
 export async function suggestQuestions(history: any[]) {
   'use server';
 
-  console.log(history);
+  logger.debug(`History state: ${JSON.stringify({ history })}`);
 
   const { object } = await generateObject({
     model: xai("grok-beta"),
@@ -98,7 +99,7 @@ export async function fetchMetadata(url: string) {
 
     return { title, description };
   } catch (error) {
-    console.error('Error fetching metadata:', error);
+    logger.error('Error fetching metadata:', { meta: { error } });
     return null;
   }
 }

@@ -1,6 +1,7 @@
 // /app/api/chat/route.ts
 import { getGroupConfig } from '@/app/actions';
 import { serverEnv } from '@/env/server';
+import { logger } from '@/lib/logger';
 import { xai } from '@ai-sdk/xai';
 import { cerebras } from '@ai-sdk/cerebras';
 import { anthropic } from '@ai-sdk/anthropic'
@@ -1873,21 +1874,25 @@ export async function POST(req: Request) {
                 },
                 onChunk(event) {
                     if (event.chunk.type === 'tool-call') {
-                        console.log('Called Tool: ', event.chunk.toolName);
+                        logger.debug(`Tool called: ${event.chunk.toolName}`);
                     }
                 },
                 onStepFinish(event) {
                     if (event.warnings) {
-                        console.log('Warnings: ', event.warnings);
+                        logger.warn('Step finished with warnings:', { meta: { warnings: event.warnings } });
                     }
                 },
                 onFinish(event) {
-                    console.log('Fin reason: ', event.finishReason);
-                    console.log('Steps ', event.steps);
-                    console.log('Messages: ', event.response.messages);
+                    logger.info('Process finished', {
+                        meta: {
+                            finishReason: event.finishReason,
+                            steps: event.steps,
+                            messages: event.response.messages
+                        }
+                    });
                 },
                 onError(event) {
-                    console.log('Error: ', event.error);
+                    logger.error('Process error:', { meta: { error: event.error } });
                 },
             });
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Share, Plus, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 
 export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -56,7 +57,7 @@ export function InstallPrompt() {
         setDeferredPrompt(null);
       }
     } catch (error) {
-      console.error('Install prompt error:', error);
+      logger.error('Install prompt error:', { meta: { error } });
     }
   };
 

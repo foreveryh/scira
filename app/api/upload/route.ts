@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
     const formData = await request.formData();
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
             size: file.size, // Include the file size in the response
         });
     } catch (error) {
-        console.error('Error uploading file:', error);
+        logger.error('Error uploading file:', { meta: { error } });
         return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
     }
 }

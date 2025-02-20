@@ -1,6 +1,7 @@
 import { xai } from '@ai-sdk/xai';
 import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 export interface TrendingQuery {
@@ -68,7 +69,7 @@ async function fetchGoogleTrends(): Promise<TrendingQuery[]> {
 
             return itemsWithCategoryAndIcon;
         } catch (error) {
-            console.error(`Failed to fetch Google Trends for geo: ${geo}`, error);
+            logger.error(`Failed to fetch Google Trends for geo: ${geo}`, { meta: { error } });
             return [];
         }
     };
@@ -98,7 +99,7 @@ async function fetchRedditQuestions(): Promise<TrendingQuery[]> {
             .filter((query: TrendingQuery) => query.text.length <= maxLength)
             .slice(0, 15);
     } catch (error) {
-        console.error('Failed to fetch Reddit questions:', error);
+        logger.error('Failed to fetch Reddit questions:', { meta: { error } });
         return [];
     }
 }
@@ -125,7 +126,7 @@ export async function GET(req: Request) {
 
         if (trends.length === 0) {
             // Fallback queries if both sources fail
-            console.error('Both sources failed to fetch trends, returning fallback queries');
+            logger.warn('Both sources failed to fetch trends, returning fallback queries');
             return NextResponse.json([
                 {
                     icon: 'sparkles',
@@ -147,7 +148,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json(trends);
     } catch (error) {
-        console.error('Failed to fetch trends:', error);
+        logger.error('Failed to fetch trends:', { meta: { error } });
         return NextResponse.error();
     }
 }

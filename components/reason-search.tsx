@@ -75,6 +75,18 @@ const ResearchStep = ({
     onToggle: () => void,
     id: string
 }) => {
+    // Add logging for step updates
+    React.useEffect(() => {
+        console.log('[ResearchStep] Step state:', {
+            id,
+            type: update.type,
+            status: update.status,
+            isExpanded,
+            hasFindings: update.type === 'analysis' ? !!update.findings?.length : undefined,
+            hasResults: (update.type === 'web' || update.type === 'academic') ? !!update.results?.length : undefined,
+            hasPlan: update.type === 'plan' ? !!update.plan : undefined
+        });
+    }, [update, isExpanded, id]);
     const icons = {
         plan: Search,
         web: FileText,
@@ -290,8 +302,21 @@ const StepCarousel = ({ updates }: { updates: StreamUpdate[] }) => {
     const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+    // Add logging for updates in StepCarousel
+    React.useEffect(() => {
+        console.log('[StepCarousel] Updates state:', {
+            updates: updates.map(u => ({
+                id: u.id,
+                type: u.type,
+                status: u.status,
+                hasResults: u.type === 'web' || u.type === 'academic' ? !!u.results?.length : undefined
+            }))
+        });
+    }, [updates]);
+
     // Handle toggle for a specific step
     const handleToggle = (stepId: string) => {
+        console.log('[StepCarousel] Toggling step:', { stepId });
         setExpandedSteps(current => {
             const newSet = new Set(current);
             if (newSet.has(stepId)) {
@@ -334,6 +359,16 @@ const StepCarousel = ({ updates }: { updates: StreamUpdate[] }) => {
 };
 
 const SourcesList = ({ sources, type }: { sources: StreamUpdate['results'], type: 'web' | 'academic' }) => {
+    // Add logging for sources data
+    React.useEffect(() => {
+        console.log('[SourcesList] Rendering sources:', {
+            type,
+            count: sources?.length,
+            hasContent: sources?.every(s => s.content),
+            urls: sources?.map(s => s.url)
+        });
+    }, [sources, type]);
+
     return (
         <div className="space-y-2">
             {sources?.map((source, i) => (
@@ -385,6 +420,16 @@ const AllSourcesView = ({
     id?: string
 }) => {
     const isDesktop = useMediaQuery("(min-width: 768px)");
+
+    // Add logging for sources view state
+    React.useEffect(() => {
+        console.log('[AllSourcesView] View state:', {
+            type,
+            sourceCount: sources?.length,
+            isDesktop,
+            viewId: id
+        });
+    }, [sources, type, isDesktop, id]);
     const title = `${type === 'web' ? 'Web' : 'Academic'} Sources`;
 
     if (isDesktop) {
@@ -482,9 +527,24 @@ const ReasonSearch = ({ updates }: { updates: StreamUpdate[] }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [selectedTab, setSelectedTab] = useState("web");
 
+    // Add logging for updates state changes
+    React.useEffect(() => {
+        console.log('[ReasonSearch] Updates received:', {
+            count: updates.length,
+            types: updates.map(u => u.type),
+            statuses: updates.map(u => u.status)
+        });
+    }, [updates]);
+
     // Get the research plan update—prefer the completed update if available
     const planUpdateFromUpdates = React.useMemo(() => {
-        return updates.find(u => u.type === 'plan' && u.status === 'completed') || updates.find(u => u.type === 'plan');
+        const completedPlan = updates.find(u => u.type === 'plan' && u.status === 'completed');
+        const anyPlan = updates.find(u => u.type === 'plan');
+        console.log('[ReasonSearch] Plan update found:', {
+            hasCompletedPlan: !!completedPlan,
+            hasAnyPlan: !!anyPlan
+        });
+        return completedPlan || anyPlan;
     }, [updates]);
 
     const additionalAdvancedSteps = React.useMemo(() => {
@@ -1081,4 +1141,4 @@ const ReasonSearch = ({ updates }: { updates: StreamUpdate[] }) => {
     );
 };
 
-export default ReasonSearch; 
+export default ReasonSearch;

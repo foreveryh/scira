@@ -676,7 +676,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         inputRef.current?.focus();
     }, [setSelectedGroup, resetSuggestedQuestions, inputRef]);
 
-    const uploadFile = async (file: File): Promise<Attachment> => {
+    const uploadFile = useCallback(async (file: File): Promise<Attachment> => {
         const formData = new FormData();
         formData.append('file', file);
 
@@ -697,7 +697,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
             toast.error("Failed to upload file, please try again!");
             throw error;
         }
-    };
+    }, []);
 
     const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
@@ -878,7 +878,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         } else {
             toast.error("Please enter a search query or attach an image.");
         }
-    }, [input, attachments, handleSubmit, setAttachments, fileInputRef, lastSubmittedQueryRef, status]);
+    }, [input, attachments, handleSubmit, setAttachments, fileInputRef, lastSubmittedQueryRef, status, setHasSubmitted]);
 
     const submitForm = useCallback(() => {
         onSubmit({ preventDefault: () => { }, stopPropagation: () => { } } as React.FormEvent<HTMLFormElement>);
