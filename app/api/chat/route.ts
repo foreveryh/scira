@@ -332,8 +332,11 @@ export async function POST(req: Request) {
                             searchDepth: ('basic' | 'advanced')[];
                             exclude_domains?: string[];
                         }) => {
-                            const apiKey = serverEnv.TAVILY_API_KEY;
+                            const { tavilyKeyRotator } = require('@/lib/key-rotator');
+                            const apiKey = tavilyKeyRotator.getCurrentKey();
                             const tvly = tavily({ apiKey });
+                            // 每次使用后轮换到下一个 key
+                            tavilyKeyRotator.rotateKey();
                             const includeImageDescriptions = true;
 
                             console.log('Queries:', queries);
@@ -1330,8 +1333,11 @@ export async function POST(req: Request) {
                             depth: z.enum(['basic', 'advanced']).describe('Search depth level').default('basic'),
                         }),
                         execute: async ({ topic, depth }: { topic: string; depth: 'basic' | 'advanced' }) => {
-                            const apiKey = serverEnv.TAVILY_API_KEY;
+                            const { tavilyKeyRotator } = require('@/lib/key-rotator');
+                            const apiKey = tavilyKeyRotator.getCurrentKey();
                             const tvly = tavily({ apiKey });
+                            // 每次使用后轮换到下一个 key
+                            tavilyKeyRotator.rotateKey();
                             const exa = new Exa(serverEnv.EXA_API_KEY as string);
 
                             // Send initial plan status update (without steps count and extra details)

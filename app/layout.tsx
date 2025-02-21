@@ -10,12 +10,12 @@ import "./globals.css";
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://scira.app"),
-  title: "Scira",
+  metadataBase: new URL("https://s.deeptoai.com"),
+  title: "OpenSoruce DeepSearch",
   description: "Scira is a minimalistic AI-powered search engine that helps you find information on the internet.",
   openGraph: {
-    url: "https://scira.app",
-    siteName: "Scira",
+    url: "https://s.deeptoai.com",
+    siteName: "OpenSoruce DeepSearch",
   },
   keywords: [
     "Scira",
