@@ -84,7 +84,8 @@ import {
     YoutubeIcon,
     Zap,
     RotateCw,
-    RefreshCw
+    RefreshCw,
+    Clock
 } from 'lucide-react';
 import Marked, { ReactRenderer } from 'marked-react';
 import { useTheme } from 'next-themes';
@@ -98,7 +99,8 @@ import React, {
     useEffect,
     useMemo,
     useRef,
-    useState
+    useState,
+    useContext
 } from 'react';
 import Latex from 'react-latex-next';
 import ReactMarkdown from 'react-markdown';
@@ -1124,6 +1126,62 @@ const HomeContent = () => {
             blockquote(children) {
                 return <blockquote className="border-l-4 border-neutral-300 dark:border-neutral-600 pl-4 italic my-4 text-neutral-700 dark:text-neutral-300">{children}</blockquote>;
             },
+            // Add table renderer methods
+            table(children) {
+                return (
+                    <div className="w-full my-6 overflow-hidden">
+                        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                            <table className="w-full border-collapse text-sm">
+                                {children}
+                            </table>
+                        </div>
+                    </div>
+                );
+            },
+            tableRow(children) {
+                return (
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800 last:border-0 transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30">
+                        {children}
+                    </tr>
+                );
+            },
+            tableCell(children, flags) {
+                const align = flags.align ? `text-${flags.align}` : 'text-left';
+                const isHeader = flags.header;
+                
+                return isHeader ? (
+                    <th className={cn(
+                        "px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100",
+                        "bg-neutral-50/50 dark:bg-neutral-800/50",
+                        "first:pl-6 last:pr-6",
+                        align
+                    )}>
+                        {children}
+                    </th>
+                ) : (
+                    <td className={cn(
+                        "px-4 py-3 text-neutral-600 dark:text-neutral-400",
+                        "first:pl-6 last:pr-6",
+                        align
+                    )}>
+                        {children}
+                    </td>
+                );
+            },
+            tableHeader(children) {
+                return (
+                    <thead className="border-b border-neutral-200 dark:border-neutral-800">
+                        {children}
+                    </thead>
+                );
+            },
+            tableBody(children) {
+                return (
+                    <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                        {children}
+                    </tbody>
+                );
+            },
         };
 
         return (
@@ -1459,6 +1517,7 @@ const HomeContent = () => {
         // Remove the last assistant message
         const newMessages = messages.slice(0, -1);
         setMessages(newMessages);
+        setSuggestedQuestions([]);
 
         // Resubmit the last user message
         await reload();
@@ -1493,12 +1552,12 @@ const HomeContent = () => {
                                 </h2>
                             </div>
                             {status === 'ready' && messageIndex === messages.length - 1 && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => handleRegenerate()}
-                                        className="h-8 px-2 text-xs"
+                                        className="h-8 px-2 text-xs rounded-full"
                                     >
                                         <RefreshCw className="h-3.5 w-3.5" />
                                     </Button>
@@ -1512,68 +1571,102 @@ const HomeContent = () => {
             case "reasoning": {
                 const sectionKey = `${messageIndex}-${partIndex}`;
                 const isComplete = parts[partIndex + 1]?.type === "text";
-
-                // Auto-expand completed reasoning sections if not manually toggled
-                if (isComplete && reasoningVisibilityMap[sectionKey] === undefined) {
-                    setReasoningVisibilityMap(prev => ({
-                        ...prev,
-                        [sectionKey]: true
-                    }));
-                }
+                const timing = reasoningTimings[sectionKey];
+                const duration = timing?.endTime ? ((timing.endTime - timing.startTime) / 1000).toFixed(1) : null;
 
                 return (
                     <motion.div
                         key={`${messageIndex}-${partIndex}-reasoning`}
                         id={`reasoning-${messageIndex}`}
-                        className="mb-4"
+                        className="my-4"
                     >
-                        <button
-                            onClick={() => setReasoningVisibilityMap(prev => ({
-                                ...prev,
-                                [sectionKey]: !prev[sectionKey]
-                            }))}
-                            className="flex items-center justify-between w-full group text-left px-4 py-2 
-                                hover:bg-neutral-50 dark:hover:bg-neutral-800/50 
-                                border border-neutral-200 dark:border-neutral-800 
-                                rounded-lg transition-all duration-200
-                                bg-neutral-50/50 dark:bg-neutral-900/50"
-                        >
-                            <div className="flex items-center gap-2">
-                                <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                </div>
-                                <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                                    {isComplete
-                                        ? "Reasoned"
-                                        : "Reasoning"}
-                                </span>
-                            </div>
-                            <ChevronDown
+                        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+                            <button
+                                onClick={() => setReasoningVisibilityMap(prev => ({
+                                    ...prev,
+                                    [sectionKey]: !prev[sectionKey]
+                                }))}
                                 className={cn(
-                                    "h-4 w-4 text-neutral-500 transition-transform duration-200",
-                                    reasoningVisibilityMap[sectionKey] ? "rotate-180" : ""
+                                    "w-full flex items-center justify-between px-4 py-3",
+                                    "bg-neutral-50 dark:bg-neutral-900",
+                                    "hover:bg-neutral-100 dark:hover:bg-neutral-800",
+                                    "transition-colors duration-200",
+                                    "group text-left"
                                 )}
-                            />
-                        </button>
-
-                        <AnimatePresence>
-                            {reasoningVisibilityMap[sectionKey] && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="relative pl-4 mt-2">
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20 rounded-full" />
-                                        <div className="text-sm italic text-neutral-600 dark:text-neutral-400">
-                                            <MarkdownRenderer content={part.reasoning} />
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex items-center justify-center size-2">
+                                        <div className="relative flex items-center justify-center size-2">
+                                            {isComplete ? (
+                                                <div className="size-1.5 rounded-full bg-emerald-500" />
+                                            ) : (
+                                                <>
+                                                    <div className="size-1.5 rounded-full bg-[#007AFF]/30 animate-ping" />
+                                                    <div className="size-1.5 rounded-full bg-[#007AFF] absolute" />
+                                                </>
+                                            )}
                                         </div>
+                                        {!isComplete && (
+                                            <div className="absolute inset-0 rounded-full border-2 border-[#007AFF]/20 animate-ping" />
+                                        )}
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                                            {isComplete ? "Reasoned" : "Reasoning"}
+                                        </span>
+                                        {duration && (
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                                <Clock className="size-3 text-neutral-500" />
+                                                <span className="text-[10px] tabular-nums font-medium text-neutral-500">
+                                                    {duration}s
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {!isComplete && (
+                                        <div className="flex items-center gap-[3px] px-2 py-1">
+                                            {[...Array(3)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="size-1 rounded-full bg-primary/60 animate-pulse"
+                                                    style={{ animationDelay: `${i * 200}ms` }}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                    <ChevronDown 
+                                        className={cn(
+                                            "size-4 text-neutral-400 transition-transform duration-200",
+                                            reasoningVisibilityMap[sectionKey] ? "rotate-180" : ""
+                                        )}
+                                    />
+                                </div>
+                            </button>
+
+                            <AnimatePresence>
+                                {reasoningVisibilityMap[sectionKey] && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden border-t border-neutral-200 dark:border-neutral-800"
+                                    >
+                                        <div className="p-4 bg-white dark:bg-neutral-900">
+                                            <div className={cn(
+                                                "text-sm text-neutral-600 dark:text-neutral-400",
+                                                "prose prose-neutral dark:prose-invert max-w-none",
+                                                "prose-p:my-2 prose-p:leading-relaxed"
+                                            )}>
+                                                <MarkdownRenderer content={part.reasoning} />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </motion.div>
                 );
             }
@@ -1589,6 +1682,40 @@ const HomeContent = () => {
                 return null;
         }
     };
+
+    // Add near other state declarations in HomeContent
+    interface ReasoningTiming {
+        startTime: number;
+        endTime?: number;
+    }
+
+    const [reasoningTimings, setReasoningTimings] = useState<Record<string, ReasoningTiming>>({});
+
+    useEffect(() => {
+        messages.forEach((message, messageIndex) => {
+            message.parts?.forEach((part, partIndex) => {
+                if (part.type === "reasoning") {
+                    const sectionKey = `${messageIndex}-${partIndex}`;
+                    const isComplete = message.parts[partIndex + 1]?.type === "text";
+
+                    if (!reasoningTimings[sectionKey]) {
+                        setReasoningTimings(prev => ({
+                            ...prev,
+                            [sectionKey]: { startTime: Date.now() }
+                        }));
+                    } else if (isComplete && !reasoningTimings[sectionKey].endTime) {
+                        setReasoningTimings(prev => ({
+                            ...prev,
+                            [sectionKey]: {
+                                ...prev[sectionKey],
+                                endTime: Date.now()
+                            }
+                        }));
+                    }
+                }
+            });
+        });
+    }, [messages]);
 
     return (
         <div className="flex flex-col !font-sans items-center min-h-screen bg-background text-foreground transition-all duration-500">
@@ -1648,76 +1775,114 @@ const HomeContent = () => {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.5 }}
-                                        className="flex items-start gap-2 mb-4 px-2 sm:px-0"
+                                        className="mb-4 px-2 sm:px-0"
                                     >
-                                        <User2 className="size-4 sm:size-5 text-primary flex-shrink-0 mt-0.5" />
                                         <div className="flex-grow min-w-0">
                                             {isEditingMessage && editingMessageIndex === index ? (
                                                 <form onSubmit={handleMessageUpdate} className="w-full">
-                                                    <div className="relative flex items-center">
-                                                        <Input
-                                                            value={input}
-                                                            onChange={(e) => setInput(e.target.value)}
-                                                            className="pr-20 h-8 text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                                                            placeholder="Edit your message..."
-                                                        />
-                                                        <div className="absolute right-1 flex items-center gap-1">
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => {
-                                                                    setIsEditingMessage(false);
-                                                                    setEditingMessageIndex(-1);
-                                                                    setInput('');
-                                                                }}
-                                                                className="h-6 w-6"
-                                                                disabled={status === 'ready'}
-                                                            >
-                                                                <X className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                            <Button
-                                                                type="submit"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-6 w-6 text-primary hover:text-primary/80"
-                                                                disabled={status === 'ready'}
-                                                            >
-                                                                <ArrowRight className="h-3.5 w-3.5" />
-                                                            </Button>
+                                                    <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+                                                        <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800">
+                                                            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                                                                Edit Query
+                                                            </span>
+                                                            <div className="bg-neutral-100 dark:bg-neutral-800 rounded-[9px] border border-neutral-200 dark:border-neutral-700 flex items-center">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => {
+                                                                        setIsEditingMessage(false);
+                                                                        setEditingMessageIndex(-1);
+                                                                        setInput('');
+                                                                    }}
+                                                                    className="h-7 w-7 !rounded-l-lg !rounded-r-none text-neutral-500 dark:text-neutral-400 hover:text-primary"
+                                                                    disabled={status === 'submitted' || status === 'streaming'}
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </Button>
+                                                                <Separator orientation="vertical" className="h-7 bg-neutral-200 dark:bg-neutral-700" />
+                                                                <Button
+                                                                    type="submit"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7 !rounded-r-lg !rounded-l-none text-neutral-500 dark:text-neutral-400 hover:text-primary"
+                                                                    disabled={status === 'submitted' || status === 'streaming'}
+                                                                >
+                                                                    <ArrowRight className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4">
+                                                            <textarea
+                                                                value={input}
+                                                                onChange={(e) => setInput(e.target.value)}
+                                                                rows={3}
+                                                                className="w-full resize-none rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 text-base text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                                placeholder="Edit your message..."
+                                                            />
                                                         </div>
                                                     </div>
                                                 </form>
                                             ) : (
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex-grow min-w-0">
-                                                        <p className="text-base sm:text-lg font-medium font-sans break-words text-neutral-800 dark:text-neutral-200">
+                                                <div className="group relative">
+                                                    <div className="relative">
+                                                        <p className="text-xl font-medium font-sans break-words text-neutral-900 dark:text-neutral-100 pr-10 sm:pr-12">
                                                             {message.content}
                                                         </p>
-                                                        <div className='flex flex-row gap-2'>
-                                                            {message.experimental_attachments?.map((attachment, attachmentIndex) => (
-                                                                <div key={attachmentIndex} className="mt-2">
+                                                        {!isEditingMessage && index === lastUserMessageIndex && (
+                                                            <div className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-transparent rounded-[9px] border border-neutral-200 dark:border-neutral-700 flex items-center">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleMessageEdit(index)}
+                                                                    className="h-7 w-7 !rounded-l-lg !rounded-r-none text-neutral-500 dark:text-neutral-400 hover:text-primary"
+                                                                    disabled={status === 'submitted' || status === 'streaming'}
+                                                                >
+                                                                    <svg 
+                                                                        width="15" 
+                                                                        height="15" 
+                                                                        viewBox="0 0 15 15" 
+                                                                        fill="none" 
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        className="h-4 w-4"
+                                                                    >
+                                                                        <path 
+                                                                            d="M12.1464 1.14645C12.3417 0.951184 12.6583 0.951184 12.8535 1.14645L14.8535 3.14645C15.0488 3.34171 15.0488 3.65829 14.8535 3.85355L10.9109 7.79618C10.8349 7.87218 10.7471 7.93543 10.651 7.9835L6.72359 9.94721C6.53109 10.0435 6.29861 10.0057 6.14643 9.85355C5.99425 9.70137 5.95652 9.46889 6.05277 9.27639L8.01648 5.34897C8.06455 5.25283 8.1278 5.16507 8.2038 5.08907L12.1464 1.14645ZM12.5 2.20711L8.91091 5.79618L7.87266 7.87267L9.94915 6.83442L13.5382 3.24535L12.5 2.20711ZM8.99997 1.49997C9.27611 1.49997 9.49997 1.72383 9.49997 1.99997C9.49997 2.27611 9.27611 2.49997 8.99997 2.49997H4.49997C3.67154 2.49997 2.99997 3.17154 2.99997 3.99997V11C2.99997 11.8284 3.67154 12.5 4.49997 12.5H11.5C12.3284 12.5 13 11.8284 13 11V6.49997C13 6.22383 13.2238 5.99997 13.5 5.99997C13.7761 5.99997 14 6.22383 14 6.49997V11C14 12.3807 12.8807 13.5 11.5 13.5H4.49997C3.11926 13.5 1.99997 12.3807 1.99997 11V3.99997C1.99997 2.61926 3.11926 1.49997 4.49997 1.49997H8.99997Z" 
+                                                                            fill="currentColor" 
+                                                                            fillRule="evenodd" 
+                                                                            clipRule="evenodd"
+                                                                        />
+                                                                    </svg>
+                                                                </Button>
+                                                                <Separator orientation="vertical" className="h-7" />
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(message.content);
+                                                                        toast.success("Copied to clipboard");
+                                                                    }}
+                                                                    className="h-7 w-7 !rounded-r-lg !rounded-l-none text-neutral-500 dark:text-neutral-400 hover:text-primary"
+                                                                >
+                                                                    <Copy className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {message.experimental_attachments && (
+                                                        <div className='flex flex-row gap-2 mt-3'>
+                                                            {message.experimental_attachments.map((attachment, attachmentIndex) => (
+                                                                <div key={attachmentIndex}>
                                                                     {attachment.contentType!.startsWith('image/') && (
                                                                         <img
                                                                             src={attachment.url}
                                                                             alt={attachment.name || `Attachment ${attachmentIndex + 1}`}
-                                                                            className="max-w-full h-24 sm:h-32 object-fill rounded-lg"
+                                                                            className="max-w-full h-32 sm:h-48 object-cover rounded-lg border border-neutral-200 dark:border-neutral-800"
                                                                         />
                                                                     )}
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    </div>
-                                                    {!isEditingMessage && index === lastUserMessageIndex && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleMessageEdit(index)}
-                                                            className="h-6 w-6 text-neutral-500 dark:text-neutral-400 hover:text-primary flex-shrink-0"
-                                                            disabled={status === 'ready'}
-                                                        >
-                                                            <Edit2 className="size-4 sm:size-5" />
-                                                        </Button>
                                                     )}
                                                 </div>
                                             )}
@@ -2409,6 +2574,8 @@ const ToolInvocationListView = memo(
                                             x_scale: 'datetime'
                                         }}
                                         data={result.chart.elements}
+                                        stock_symbols={args.stock_symbols}
+                                        interval={args.interval}
                                     />
                                 </div>
                             )}
@@ -2609,10 +2776,10 @@ const ToolInvocationListView = memo(
                 if (audioUrl && audioRef.current && canvasRef.current) {
                     waveRef.current = new Wave(audioRef.current, canvasRef.current);
                     waveRef.current.addAnimation(new waveRef.current.animations.Lines({
-                        lineColor: "rgb(203, 113, 93)",
-                        lineWidth: 2,
+                        lineWidth: 1.5,
+                        lineColor: 'rgb(147, 51, 234)',
+                        count: 80,
                         mirroredY: true,
-                        count: 100,
                     }));
                 }
             }, [audioUrl]);
@@ -2621,9 +2788,16 @@ const ToolInvocationListView = memo(
                 if (!audioUrl && !isGeneratingAudio) {
                     setIsGeneratingAudio(true);
                     try {
-                        const { audio } = await generateSpeech(result.translatedText, 'alloy');
+                        const { audio } = await generateSpeech(result.translatedText);
                         setAudioUrl(audio);
                         setIsGeneratingAudio(false);
+                        // Autoplay after a short delay to ensure audio is loaded
+                        setTimeout(() => {
+                            if (audioRef.current) {
+                                audioRef.current.play();
+                                setIsPlaying(true);
+                            }
+                        }, 100);
                     } catch (error) {
                         console.error("Error generating speech:", error);
                         setIsGeneratingAudio(false);
@@ -2661,31 +2835,38 @@ const ToolInvocationListView = memo(
 
             return (
                 <Card className="w-full my-4 shadow-none bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                    <CardContent className="p-6">
-                        <div className="space-y-4">
-                            <div className="w-full h-24 bg-neutral-100 dark:bg-neutral-700 rounded-lg overflow-hidden">
-                                <canvas ref={canvasRef} width="800" height="200" className="w-full h-full" />
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="space-y-4 sm:space-y-6">
+                            <div>
+                                <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                                    The phrase <span className="font-medium text-neutral-900 dark:text-neutral-100">{toolInvocation.args.text}</span> translates from <span className="font-medium text-neutral-900 dark:text-neutral-100">{result.detectedLanguage}</span> to <span className="font-medium text-neutral-900 dark:text-neutral-100">{toolInvocation.args.to}</span> as <span className="font-medium text-primary">{result.translatedText}</span>
+                                </p>
                             </div>
-                            <div className="flex text-left gap-3 items-center justify-center text-pretty">
-                                <div className="flex justify-center space-x-2">
-                                    <Button
-                                        onClick={handlePlayPause}
-                                        disabled={isGeneratingAudio}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-xs sm:text-sm w-24 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200"
-                                    >
-                                        {isGeneratingAudio ? (
-                                            "Generating..."
-                                        ) : isPlaying ? (
-                                            <><Pause className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Pause</>
-                                        ) : (
-                                            <><Play className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Play</>
-                                        )}
-                                    </Button>
-                                </div>
-                                <div className='text-sm text-neutral-800 dark:text-neutral-200'>
-                                    The phrase <span className='font-semibold'>{toolInvocation.args.text}</span> translates from <span className='font-semibold'>{result.detectedLanguage}</span> to <span className='font-semibold'>{toolInvocation.args.to}</span> as <span className='font-semibold'>{result.translatedText}</span> in <span className='font-semibold'>{toolInvocation.args.to}</span>.
+
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Button
+                                    onClick={handlePlayPause}
+                                    disabled={isGeneratingAudio}
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex-shrink-0"
+                                >
+                                    {isGeneratingAudio ? (
+                                        <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                                    ) : isPlaying ? (
+                                        <Pause className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    ) : (
+                                        <Play className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    )}
+                                </Button>
+
+                                <div className="flex-1 h-8 sm:h-10 bg-neutral-100 dark:bg-neutral-900 rounded-md sm:rounded-lg overflow-hidden">
+                                    <canvas 
+                                        ref={canvasRef} 
+                                        width="800" 
+                                        height="200" 
+                                        className="w-full h-full opacity-90 dark:opacity-70" 
+                                    />
                                 </div>
                             </div>
                         </div>

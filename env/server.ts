@@ -5,6 +5,7 @@ import { z } from 'zod'
 export const serverEnv = createEnv({
   server: {
     XAI_API_KEY: z.string().min(1),
+    PPINFRA_API_KEY: z.string().optional(),
     AZURE_RESOURCE_NAME: z.string().optional(),
     AZURE_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),

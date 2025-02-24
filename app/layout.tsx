@@ -67,6 +67,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script defer data-domain="s.deeptoai.com" src="http://analytics.deeptoai.com/js/script.tagged-events.js"></script>
+      </head>
       <body className={`${GeistSans.variable} ${syne.variable} font-sans antialiased`}>
         <NuqsAdapter>
           <Providers>
